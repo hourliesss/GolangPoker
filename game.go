@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ type round struct {
 	maxBet       int
 	playersAlive int
 	playersAllIn int
+	limitBet     int
 }
 
 type roundResults = [][]playerResult
@@ -44,6 +46,7 @@ type game struct {
 	dealerTurn      int
 	smallBlindValue int
 	bigBlindValue   int
+	totalStack      int
 }
 
 func launchGame() game {
@@ -53,13 +56,13 @@ func launchGame() game {
 	printSimPoker()
 
 	for {
-		fmt.Print("-> How many real players? (2 to 9)\n")
+		fmt.Print("-> How many real players? (0 to 9)\n")
 
 		text := readFromTerminal()
 
 		number, err := strconv.Atoi(text)
 		if err == nil {
-			if number > 1 && number < 10 {
+			if number >= 0 && number < 10 {
 				for i := 0; i < number; i++ {
 					p := person{stack: 1000}
 					fmt.Print("-> Name of player ", i+1, "?\n")
@@ -68,14 +71,12 @@ func launchGame() game {
 					sp = append(sp, p)
 				}
 
-				// AI IN PROCESS
-
-				/*fmt.Print("-> How many virtual players? (" + strconv.Itoa(9-number) + " max)\n")
+				fmt.Print("-> How many virtual players? (" + strconv.Itoa(9-number) + " max)\n")
 				text2 := readFromTerminal()
 
 				numberOfBots, err2 := strconv.Atoi(text2)
-				if err2 == nil || number < 0 || numberOfBots+number > 9 {
-					for i := 0; i < number; i++ {
+				if err2 == nil && numberOfBots >= 0 && numberOfBots+number < 10 {
+					for i := 0; i < numberOfBots; i++ {
 						p := person{stack: 1000, isBot: true}
 						fmt.Print("-> Name of the virtual player ", i+1, "?\n")
 						name := readFromTerminal()
@@ -85,9 +86,9 @@ func launchGame() game {
 				} else {
 					fmt.Println("Unvalid number")
 					os.Exit(1)
-				}*/
+				}
 			} else {
-				fmt.Println("Sorry, Only 2 to 9 players can play")
+				fmt.Println("Sorry, Only 1 to 9 players can play")
 				os.Exit(1)
 			}
 		} else {
@@ -109,6 +110,7 @@ func newGame(p []person) game {
 		bigBlindValue:   20,
 		rounds:          []round{},
 		players:         p,
+		totalStack:      p[0].stack * len(p),
 	}
 
 	return g
@@ -117,8 +119,18 @@ func newGame(p []person) game {
 func (g *game) newRound() {
 	d := newDeck()
 	players := []player{}
+	biggestStack := 0
+	secondStack := 0
 	for _, person := range (*g).players {
 		if person.stack > 0 {
+			if biggestStack < person.stack {
+				secondStack = biggestStack
+				biggestStack = person.stack
+			} else {
+				if secondStack < person.stack {
+					secondStack = person.stack
+				}
+			}
 			c := deal(&d, 2)
 			player := player{
 				name:         person.name,
@@ -140,6 +152,7 @@ func (g *game) newRound() {
 		deck:         d,
 		players:      players,
 		playersAlive: len(players),
+		limitBet:     secondStack,
 	}
 	(*g).rounds = append((*g).rounds, r)
 	fmt.Println()
@@ -156,11 +169,16 @@ func (g game) betBlinds() {
 	g.rounds[len(g.rounds)-1].bet(g.smallBlindTurn, g.smallBlindValue)
 	fmt.Println("\t", g.rounds[len(g.rounds)-1].players[g.smallBlindTurn].name, "is the small blind and bet", g.smallBlindValue)
 
-	g.rounds[len(g.rounds)-1].bet(g.bigBlindTurn, g.bigBlindValue)
+	if len(g.rounds[len(g.rounds)-1].players) == 2 && g.rounds[len(g.rounds)-1].playersAllIn == 1 {
+		g.rounds[len(g.rounds)-1].bet(g.bigBlindTurn, g.rounds[len(g.rounds)-1].maxBet)
+	} else {
+		g.rounds[len(g.rounds)-1].bet(g.bigBlindTurn, g.bigBlindValue)
+	}
 	fmt.Print("\t", g.rounds[len(g.rounds)-1].players[g.bigBlindTurn].name, " is the big blind and bet ", g.bigBlindValue, "\n\n")
 }
 func (pointerToRound *round) bet(playerIndex int, amount int) {
-	if (*pointerToRound).players[playerIndex].initialStack-(*pointerToRound).players[playerIndex].roundBet <= amount {
+	bet := minInt(amount, (*pointerToRound).limitBet-(*pointerToRound).players[playerIndex].roundBet)
+	if (*pointerToRound).players[playerIndex].initialStack-(*pointerToRound).players[playerIndex].roundBet <= bet {
 		(*pointerToRound).pot += (*pointerToRound).players[playerIndex].initialStack - (*pointerToRound).players[playerIndex].roundBet
 		(*pointerToRound).players[playerIndex].roundBet = (*pointerToRound).players[playerIndex].initialStack
 		(*pointerToRound).maxBet = maxInt((*pointerToRound).players[playerIndex].initialStack, (*pointerToRound).maxBet)
@@ -168,8 +186,8 @@ func (pointerToRound *round) bet(playerIndex int, amount int) {
 		(*pointerToRound).playersAllIn++
 		fmt.Println("\t", (*pointerToRound).players[playerIndex].name, " is all in!")
 	} else {
-		(*pointerToRound).players[playerIndex].roundBet += amount
-		(*pointerToRound).pot += amount
+		(*pointerToRound).players[playerIndex].roundBet += bet
+		(*pointerToRound).pot += bet
 		(*pointerToRound).maxBet = (*pointerToRound).players[playerIndex].roundBet
 	}
 }
@@ -225,6 +243,11 @@ func (g *game) endRound() {
 		}
 	}
 
+	/*for _, p := range r.players {
+		if !p.hasFolded {
+			fmt.Println(p.name, "has", p.cards[0].toString(), " ", p.cards[1].toString())
+		}
+	}*/
 	// actualize the blind turns
 	playersNumber := (*g).getNumberOfPlayersAlive()
 	(*g).smallBlindTurn = ((*g).smallBlindTurn + 1) % playersNumber
@@ -326,7 +349,7 @@ func (r round) isBetTurnOver(playerIndex int) bool {
 	return false
 }
 
-func play(r *round, playerIndex int, bigBlind int) {
+func play(r *round, playerIndex int, bigBlind int, totalStacks float64, coeff coefficients) {
 	pp := &((*r).players[playerIndex])
 	p := (*pp)
 	if p.isAllIn {
@@ -390,43 +413,63 @@ func play(r *round, playerIndex int, bigBlind int) {
 					fmt.Println("Your choice has not been understood")
 				}
 			}
-		} // AI SECTION IN PROCESS //
-		/*else {
-			odds := calculateOdds(p.cards, r.sharedCards)
-			fmt.Println("odds:", odds)
-			exp := expoFunction(odds)
-			fmt.Println("expo:", exp)
-			nlr := normaleLawRandomization(1)
-			fmt.Println("normalization:", nlr)
-			decision := exp * nlr
-			fmt.Println("decision:", decision)
-			if (*r).maxBet == p.roundBet {
-				if decision < 0.2 {
-					fmt.Print("\t", p.name, ", checks\n\n")
+		} else {
+			var decision float64
+
+			if (*pp).hasSpoken {
+				decision = (*pp).decision
+			} else {
+				odds := calculateOdds(p.cards, r.sharedCards)
+				fmt.Println("odds:", odds)
+				var exp float64
+				if len(r.sharedCards) == 0 {
+					exp = expoFunction(odds, 3.0)
 				} else {
-					raiseValue := maxInt(int(math.Ceil(decision*float64(p.initialStack-p.roundBet)*0.5)), bigBlind)
+					exp = expoFunction(odds, 2.0)
+				}
+				//		fmt.Println("expo:", exp)
+				nlr := normaleLawRandomization(1, 0)
+				//		fmt.Println("normalization:", nlr)
+				decision = exp * nlr
+				(*pp).decision = decision
+			}
+
+			//	fmt.Println("decision:", decision)
+			if (*r).maxBet == p.roundBet {
+				if decision < coeff.check {
+					fmt.Print("\t", p.name, " checks\n\n")
+				} else {
+					raiseValue := maxInt(int(math.Ceil(decision*float64(p.initialStack-p.roundBet)*coeff.raise*normaleLawRandomization(coeff.normalisation, -0.5*float64(coeff.normalisation)))), bigBlind)
+					raiseValue -= raiseValue % (bigBlind / 2)
 					(*r).bet(playerIndex, raiseValue)
 					fmt.Print("\t", p.name, " raises ", raiseValue, "\n\n")
 				}
 			} else {
 				toCallRatio := float64((*r).maxBet-p.roundBet) / float64(p.initialStack-p.roundBet)
-				if decision < toCallRatio {
+				if (decision < coeff.fold1 || (decision < 0.7+coeff.fold2 && decision < toCallRatio+coeff.fold2)) && (float64(p.initialStack-p.roundBet) > 0.05*totalStacks) {
 					(*pp).hasFolded = true
 					(*r).playersAlive--
-					fmt.Print("\t", p.name, ", folds\n\n")
+					fmt.Print("\t", p.name, " folds\n\n")
 				} else {
-					if decision < toCallRatio+0.2 {
+					if decision < toCallRatio+coeff.call {
 						(*r).bet(playerIndex, (*r).maxBet-p.roundBet)
+
 						fmt.Print("\t", p.name, " calls\n\n")
 					} else {
-						raiseValue := maxInt(int(math.Ceil((decision-toCallRatio)*(float64(p.initialStack-p.roundBet)))), bigBlind)
+						var raiseValue int
+						if decision > coeff.allIn {
+							raiseValue = p.initialStack - p.roundBet
+						} else {
+							raiseValue = maxInt(int(math.Ceil((decision-toCallRatio)*(float64(p.initialStack-p.roundBet)*normaleLawRandomization(coeff.normalisation, -0.5*float64(coeff.normalisation))))), bigBlind)
+							raiseValue -= raiseValue % (bigBlind / 2)
+						}
+
 						(*r).bet(playerIndex, (*r).maxBet-p.roundBet+raiseValue)
 						fmt.Print("\t", p.name, " raises ", raiseValue, "\n\n")
 					}
 				}
 			}
-		}*/
-
+		}
 		(*pp).hasSpoken = true
 
 	}
@@ -472,4 +515,13 @@ func (g game) getWinner() string {
 		}
 	}
 	return ""
+}
+
+func (g game) getWinnerIndex() int {
+	for i, player := range g.players {
+		if player.stack > 0 {
+			return i
+		}
+	}
+	return 0
 }

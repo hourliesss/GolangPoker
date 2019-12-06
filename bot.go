@@ -19,6 +19,16 @@ type initialProbabiltyResult struct {
 	try     int
 }
 
+type coefficients struct {
+	normalisation int
+	check         float64
+	raise         float64
+	fold1         float64
+	fold2         float64
+	call          float64
+	allIn float64
+}
+
 func initialProbabilty() error {
 
 	probs := map[initialProbabilityMap]initialProbabiltyResult{}
@@ -89,7 +99,6 @@ func initialProbabilty() error {
 
 	return ioutil.WriteFile("probability.csv", []byte(resultString), 0666)
 }
-
 
 func newDeckForTest(i int) deck {
 	suitValues := []string{"Spades", "Clubs", "Hearts", "Diamonds"}

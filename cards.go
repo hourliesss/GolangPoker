@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 )
 
@@ -51,7 +50,7 @@ func createCard(value int, suit string) card {
 func printDeck(d deck) {
 	s := ""
 	for _, card := range d {
-		s += card.toString() + "\n"
+		s += card.toString() + " "
 	}
 	fmt.Printf(s + "\n")
 }
@@ -119,20 +118,31 @@ func (s handScore) toString() string {
 
 func showCards(sp []player) {
 	for _, p := range sp {
-		c := ""
-		for strings.ToLower(c) != "ok" {
-			fmt.Print("\t", p.name, " press OK to see your cards ")
-			c = strings.ToLower(readFromTerminal())
+		if /*!p.isBot*/ true {
+			fmt.Print("\t", p.name, ", your cards are:\n\n")
+			fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
 		}
-		fmt.Print("\t", p.name, ", your cards are:\n\n")
-		fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
-		c = ""
-		for strings.ToLower(c) != "ok" {
-			fmt.Print("\n\n\t", p.name, " press OK to hide your cards ")
-			c = strings.ToLower(readFromTerminal())
-		}
+		/*
+			if p.isBot {
+				fmt.Print("\t", p.name, ", your cards are:\n\n")
+				fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
+			} else {
+				c := ""
+				for strings.ToLower(c) != "ok" {
+					fmt.Print("\t", p.name, " press OK to see your cards ")
+					c = strings.ToLower(readFromTerminal())
+				}
+				fmt.Print("\t", p.name, ", your cards are:\n\n")
+				fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
+				c = ""
+				for strings.ToLower(c) != "ok" {
+					fmt.Print("\n\n\t", p.name, " press OK to hide your cards ")
+					c = strings.ToLower(readFromTerminal())
+				}
 
-		printSimPoker()
+				printSimPoker()
+			}*/
+
 	}
 }
 
@@ -466,4 +476,22 @@ func contains(s []int, e int) bool {
 		}
 	}
 	return false
+}
+
+func deckContains(deck []card, c card) bool {
+	for _, a := range deck {
+		if a.value == c.value && c.suit == a.suit {
+			return true
+		}
+	}
+	return false
+}
+
+func indexOf(s []int, e int) int {
+	for i, a := range s {
+		if a == e {
+			return i
+		}
+	}
+	return -1
 }

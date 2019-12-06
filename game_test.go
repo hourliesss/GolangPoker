@@ -196,3 +196,7 @@ func TestEndRound(t *testing.T) {
 		t.Errorf("Expected different stacks after the first round")
 	}
 }
+
+func TestBotMode(t *testing.T) {
+	botMode()
+}

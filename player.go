@@ -10,6 +10,7 @@ type player struct {
 	hasFolded    bool
 	isAllIn      bool
 	isBot        bool
+	decision     float64
 }
 
 type person struct {
