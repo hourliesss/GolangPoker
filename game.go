@@ -476,7 +476,8 @@ func play(r *round, playerIndex int, bigBlind int, totalStacks float64, coeff co
 
 				limit1 := coeff.fold1
 				limit2 := raiseExpo(toCallRatio * coeff.fold2)
-				fmt.Println("tocallratio:", limit2)
+				//fmt.Println("tocallratio:", limit2)
+				//fmt.Println("decision:", decision)
 				if decision < limit1 || (decision < limit2) /* && (float64(p.initialStack-p.roundBet) > 0.05*totalStacks*/ {
 					(*pp).hasFolded = true
 					(*r).playersAlive--
