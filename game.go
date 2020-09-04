@@ -239,7 +239,7 @@ func (g *game) endRound(botMode bool) {
 							for pr := range sp {
 								if sp[pr].playerIndex == playerIndex {
 									if r.playersAlive > 1 {
-										fmt.Print("\n\t"+playerInRound.name, "has ")
+										fmt.Print("\n\t"+playerInRound.name, " has ")
 										printDeck(playerInRound.cards)
 										if playerInRound.won != 0 {
 											fmt.Println("\n\t"+playerInRound.name, "won", playerInRound.won, "with "+sp[pr].handScore.toString())
