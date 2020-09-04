@@ -3,15 +3,10 @@ Texas Hold'em poker in Golang
 
 This is my first project in Golang
 
-You can play multiplayer on a single computer or play against bots: (only 1 bot for the moment)
+You can play multiplayer on a single computer or play against bots
 
-To play, change the main function in main.go
+To play, comment or uncomment the main function in main.go
 func main() {
 	poker() // this is the mode to play mutiplayer or single player
-	//botMode() // this is the bot mode to see andre playing vs gomez
+	//botMode() // this is the bot mode to see andre playing vs gomez, this mode has been created to improve the IA
 }
-
---> go run main.go cards.go game.go bot.go player.go odds.go math_functions.go
-
-
-I am working on an AI player to play against

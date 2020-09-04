@@ -116,7 +116,7 @@ func newGame(p []person) game {
 	return g
 }
 
-func (g *game) newRound() {
+func (g *game) newRound(botMode bool) {
 	d := newDeck()
 	players := []player{}
 	biggestStack := 0
@@ -155,28 +155,36 @@ func (g *game) newRound() {
 		limitBet:     secondStack,
 	}
 	(*g).rounds = append((*g).rounds, r)
-	fmt.Println()
-	fmt.Println("ROUND", len((*g).rounds))
-	fmt.Println("\tPlayers:")
-	for _, rp := range (*g).rounds[len((*g).rounds)-1].players {
-		fmt.Println("\t\t", rp.name, "stack:", rp.initialStack)
+	if !botMode {
+		fmt.Println()
+		fmt.Println("ROUND", len((*g).rounds))
+		fmt.Println("\tPlayers:")
+		for _, rp := range (*g).rounds[len((*g).rounds)-1].players {
+			fmt.Println("\t\t", rp.name, "stack:", rp.initialStack)
+		}
+
+		fmt.Println()
 	}
 
-	fmt.Println()
 }
 
-func (g game) betBlinds() {
-	g.rounds[len(g.rounds)-1].bet(g.smallBlindTurn, g.smallBlindValue)
-	fmt.Println("\t", g.rounds[len(g.rounds)-1].players[g.smallBlindTurn].name, "is the small blind and bet", g.smallBlindValue)
+func (g game) betBlinds(botMode bool) {
+	g.rounds[len(g.rounds)-1].bet(g.smallBlindTurn, g.smallBlindValue, botMode)
+	if !botMode {
+		fmt.Println("\t", g.rounds[len(g.rounds)-1].players[g.smallBlindTurn].name, "is the small blind and bet", g.smallBlindValue)
+	}
 
 	if len(g.rounds[len(g.rounds)-1].players) == 2 && g.rounds[len(g.rounds)-1].playersAllIn == 1 {
-		g.rounds[len(g.rounds)-1].bet(g.bigBlindTurn, g.rounds[len(g.rounds)-1].maxBet)
+		g.rounds[len(g.rounds)-1].bet(g.bigBlindTurn, g.rounds[len(g.rounds)-1].maxBet, botMode)
 	} else {
-		g.rounds[len(g.rounds)-1].bet(g.bigBlindTurn, g.bigBlindValue)
+		g.rounds[len(g.rounds)-1].bet(g.bigBlindTurn, g.bigBlindValue, botMode)
 	}
-	fmt.Print("\t", g.rounds[len(g.rounds)-1].players[g.bigBlindTurn].name, " is the big blind and bet ", g.bigBlindValue, "\n\n")
+	if !botMode {
+		fmt.Print("\t", g.rounds[len(g.rounds)-1].players[g.bigBlindTurn].name, " is the big blind and bet ", g.bigBlindValue, "\n\n")
+	}
+
 }
-func (pointerToRound *round) bet(playerIndex int, amount int) {
+func (pointerToRound *round) bet(playerIndex int, amount int, botMode bool) {
 	bet := minInt(amount, (*pointerToRound).limitBet-(*pointerToRound).players[playerIndex].roundBet)
 	if (*pointerToRound).players[playerIndex].initialStack-(*pointerToRound).players[playerIndex].roundBet <= bet {
 		(*pointerToRound).pot += (*pointerToRound).players[playerIndex].initialStack - (*pointerToRound).players[playerIndex].roundBet
@@ -184,7 +192,10 @@ func (pointerToRound *round) bet(playerIndex int, amount int) {
 		(*pointerToRound).maxBet = maxInt((*pointerToRound).players[playerIndex].initialStack, (*pointerToRound).maxBet)
 		(*pointerToRound).players[playerIndex].isAllIn = true
 		(*pointerToRound).playersAllIn++
-		fmt.Println("\t", (*pointerToRound).players[playerIndex].name, " is all in!")
+		if !botMode {
+			fmt.Println("\t", (*pointerToRound).players[playerIndex].name, " is all in!")
+		}
+
 	} else {
 		(*pointerToRound).players[playerIndex].roundBet += bet
 		(*pointerToRound).pot += bet
@@ -192,7 +203,7 @@ func (pointerToRound *round) bet(playerIndex int, amount int) {
 	}
 }
 
-func (g *game) endRound() {
+func (g *game) endRound(botMode bool) {
 	r := (*g).rounds[len((*g).rounds)-1]
 	// actualize the stacks
 
@@ -223,12 +234,17 @@ func (g *game) endRound() {
 				if (*g).players[i].name == playerInRound.name {
 					(*g).players[i].stack -= playerInRound.roundBet
 					(*g).players[i].stack += playerInRound.won
-					if playerInRound.won != 0 {
+					if !botMode {
 						for _, sp := range results {
 							for pr := range sp {
 								if sp[pr].playerIndex == playerIndex {
 									if r.playersAlive > 1 {
-										fmt.Println("\n\t"+playerInRound.name, "won", playerInRound.won, "with "+sp[pr].handScore.toString())
+										fmt.Print("\n\t"+playerInRound.name, "has ")
+										printDeck(playerInRound.cards)
+										if playerInRound.won != 0 {
+											fmt.Println("\n\t"+playerInRound.name, "won", playerInRound.won, "with "+sp[pr].handScore.toString())
+										}
+
 									} else {
 										fmt.Println("\n\t"+playerInRound.name, "won", playerInRound.won)
 									}
@@ -237,6 +253,7 @@ func (g *game) endRound() {
 							}
 						}
 					}
+
 				}
 			}
 
@@ -257,9 +274,12 @@ func (g *game) endRound() {
 	if len((*g).rounds)%10 == 0 {
 		(*g).bigBlindValue *= 2
 		(*g).smallBlindValue *= 2
-		fmt.Println("the blinds increases!")
-		fmt.Println("Small blind: ", (*g).smallBlindValue)
-		fmt.Println("Big blind: ", (*g).bigBlindValue)
+		if !botMode {
+			fmt.Println("the blinds increases!")
+			fmt.Println("Small blind: ", (*g).smallBlindValue)
+			fmt.Println("Big blind: ", (*g).bigBlindValue)
+		}
+
 	}
 
 }
@@ -349,10 +369,10 @@ func (r round) isBetTurnOver(playerIndex int) bool {
 	return false
 }
 
-func play(r *round, playerIndex int, bigBlind int, totalStacks float64, coeff coefficients) {
+func play(r *round, playerIndex int, bigBlind int, totalStacks float64, coeff coefficients, botMode bool) {
 	pp := &((*r).players[playerIndex])
 	p := (*pp)
-	if p.isAllIn {
+	if p.isAllIn && !botMode {
 		fmt.Print("\t", p.name, " is all in\n")
 	}
 	if !p.isAllIn && !p.hasFolded {
@@ -380,7 +400,7 @@ func play(r *round, playerIndex int, bigBlind int, totalStacks float64, coeff co
 				case "call", "ca":
 					if (*r).maxBet != p.roundBet {
 						fmt.Print("\t", p.name, " calls\n\n")
-						(*r).bet(playerIndex, (*r).maxBet-p.roundBet)
+						(*r).bet(playerIndex, (*r).maxBet-p.roundBet, false)
 					}
 				case "fold", "f":
 					(*pp).hasFolded = true
@@ -397,11 +417,11 @@ func play(r *round, playerIndex int, bigBlind int, totalStacks float64, coeff co
 								if err == nil {
 									if number >= bigBlind {
 										valueRaise = number
-										(*r).bet(playerIndex, (*r).maxBet-p.roundBet+number)
+										(*r).bet(playerIndex, (*r).maxBet-p.roundBet+number, false)
 									}
 								}
 							} else {
-								(*r).bet(playerIndex, p.initialStack-p.roundBet)
+								(*r).bet(playerIndex, p.initialStack-p.roundBet, false)
 							}
 						}
 						fmt.Print("\t", p.name, " raises ", valueRaise, "\n\n")
@@ -420,52 +440,72 @@ func play(r *round, playerIndex int, bigBlind int, totalStacks float64, coeff co
 				decision = (*pp).decision
 			} else {
 				odds := calculateOdds(p.cards, r.sharedCards)
-				fmt.Println("odds:", odds)
-				var exp float64
-				if len(r.sharedCards) == 0 {
-					exp = expoFunction(odds, 3.0)
-				} else {
-					exp = expoFunction(odds, 2.0)
-				}
-				//		fmt.Println("expo:", exp)
-				nlr := normaleLawRandomization(1, 0)
+				//fmt.Println("odds:", odds)
+				/*	var exp float64
+					if len(r.sharedCards) == 0 {
+						exp = expoFunction(odds, 3.0)
+					} else {
+						exp = expoFunction(odds, 2.0)
+					}
+					//		fmt.Println("expo:", exp)
+					nlr := normaleLawRandomization(1, 0)*/
 				//		fmt.Println("normalization:", nlr)
-				decision = exp * nlr
+				//decision = exp * nlr
+				//fmt.Println("decision before random:", odds)
+				decision = odds * normaleLawRandomization(0.7, 0)
 				(*pp).decision = decision
 			}
 
-			//	fmt.Println("decision:", decision)
+			//fmt.Println("decision after random:", decision)
 			if (*r).maxBet == p.roundBet {
 				if decision < coeff.check {
-					fmt.Print("\t", p.name, " checks\n\n")
+					if !botMode {
+						fmt.Print("\t", p.name, " checks\n\n")
+					}
 				} else {
-					raiseValue := maxInt(int(math.Ceil(decision*float64(p.initialStack-p.roundBet)*coeff.raise*normaleLawRandomization(coeff.normalisation, -0.5*float64(coeff.normalisation)))), bigBlind)
+					raiseValue := maxInt(int(math.Ceil(expoFunction(decision, 3.0)*(totalStacks/float64(len(r.players)))*coeff.raise*normaleLawRandomization(1, 0))), bigBlind)
 					raiseValue -= raiseValue % (bigBlind / 2)
-					(*r).bet(playerIndex, raiseValue)
-					fmt.Print("\t", p.name, " raises ", raiseValue, "\n\n")
+					(*r).bet(playerIndex, raiseValue, botMode)
+					if !botMode {
+						fmt.Print("\t", p.name, " raises ", raiseValue, "\n\n")
+					}
+
 				}
 			} else {
-				toCallRatio := float64((*r).maxBet-p.roundBet) / float64(p.initialStack-p.roundBet)
-				if (decision < coeff.fold1 || (decision < 0.7+coeff.fold2 && decision < toCallRatio+coeff.fold2)) && (float64(p.initialStack-p.roundBet) > 0.05*totalStacks) {
+				toCallRatio := float64((*r).maxBet-p.roundBet) / (totalStacks * math.Exp(float64(p.roundBet)/(totalStacks/float64(len(r.players)))))
+
+				limit1 := coeff.fold1
+				limit2 := raiseExpo(toCallRatio * coeff.fold2)
+				fmt.Println("tocallratio:", limit2)
+				if decision < limit1 || (decision < limit2) /* && (float64(p.initialStack-p.roundBet) > 0.05*totalStacks*/ {
 					(*pp).hasFolded = true
 					(*r).playersAlive--
-					fmt.Print("\t", p.name, " folds\n\n")
-				} else {
-					if decision < toCallRatio+coeff.call {
-						(*r).bet(playerIndex, (*r).maxBet-p.roundBet)
+					if !botMode {
+						fmt.Print("\t", p.name, " folds\n\n")
+					}
 
-						fmt.Print("\t", p.name, " calls\n\n")
+				} else {
+					overFold := decision - limit2
+					if overFold < coeff.call {
+						(*r).bet(playerIndex, (*r).maxBet-p.roundBet, botMode)
+						if !botMode {
+							fmt.Print("\t", p.name, " calls\n\n")
+						}
+
 					} else {
 						var raiseValue int
 						if decision > coeff.allIn {
 							raiseValue = p.initialStack - p.roundBet
 						} else {
-							raiseValue = maxInt(int(math.Ceil((decision-toCallRatio)*(float64(p.initialStack-p.roundBet)*normaleLawRandomization(coeff.normalisation, -0.5*float64(coeff.normalisation))))), bigBlind)
+							raiseValue = maxInt(int(math.Ceil(expoFunction(overFold, 3.0)*(totalStacks/float64(len(r.players)))*coeff.raise*normaleLawRandomization(0.5, 0))), bigBlind)
 							raiseValue -= raiseValue % (bigBlind / 2)
 						}
 
-						(*r).bet(playerIndex, (*r).maxBet-p.roundBet+raiseValue)
-						fmt.Print("\t", p.name, " raises ", raiseValue, "\n\n")
+						(*r).bet(playerIndex, (*r).maxBet-p.roundBet+raiseValue, botMode)
+						if !botMode {
+							fmt.Print("\t", p.name, " raises ", raiseValue, "\n\n")
+						}
+
 					}
 				}
 			}

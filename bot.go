@@ -46,7 +46,7 @@ func initialProbabilty() error {
 			}
 			probs[initSuited] = initialProbabiltyResult{}
 			probs[initNotSuited] = initialProbabiltyResult{}
-		}
+		} 
 	}
 
 	for count := 0; count < 100000000; count++ {

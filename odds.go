@@ -10,7 +10,8 @@ import (
 
 // calculates the odds that we hav a better hand than the opponent -- if we are before the flop, the odds are taken from the initialOdds2players file
 // the odds inside are statistics of wining with each hand calculated in 100,000,000 rounds
-func calculateOdds(hand []card, sharedCards []card) float64 {
+func calculateOdds(hand []card, sharedCardsInput []card) float64 {
+	sharedCards := copyDeck(sharedCardsInput)
 	switch len(sharedCards) {
 	case 0:
 		bytes, err := ioutil.ReadFile("initialOdds2Players.csv")
@@ -63,7 +64,7 @@ func calculateOdds(hand []card, sharedCards []card) float64 {
 				}
 			}
 		}
-		return totalOdds / combi
+		return 1.0 - totalOdds/combi
 	case 4:
 		totalOdds := 0.0
 		combi := 0.0
@@ -77,7 +78,7 @@ func calculateOdds(hand []card, sharedCards []card) float64 {
 				}
 			}
 		}
-		return totalOdds / combi
+		return 1.0 - totalOdds/combi
 	}
 	return 0
 

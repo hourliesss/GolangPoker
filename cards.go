@@ -118,30 +118,30 @@ func (s handScore) toString() string {
 
 func showCards(sp []player) {
 	for _, p := range sp {
-		if /*!p.isBot*/ true {
+		/*if p.isBot {
 			fmt.Print("\t", p.name, ", your cards are:\n\n")
 			fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
-		}
-		/*
-			if p.isBot {
-				fmt.Print("\t", p.name, ", your cards are:\n\n")
-				fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
-			} else {
-				c := ""
-				for strings.ToLower(c) != "ok" {
-					fmt.Print("\t", p.name, " press OK to see your cards ")
-					c = strings.ToLower(readFromTerminal())
-				}
-				fmt.Print("\t", p.name, ", your cards are:\n\n")
-				fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
-				c = ""
-				for strings.ToLower(c) != "ok" {
-					fmt.Print("\n\n\t", p.name, " press OK to hide your cards ")
-					c = strings.ToLower(readFromTerminal())
-				}
+		} else {
+			c := ""
+			for strings.ToLower(c) != "ok" {
+				fmt.Print("\t", p.name, " press OK to see your cards ")
+				c = strings.ToLower(readFromTerminal())
+			}
+			fmt.Print("\t", p.name, ", your cards are:\n\n")
+			fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
+			c = ""
+			for strings.ToLower(c) != "ok" {
+				fmt.Print("\n\n\t", p.name, " press OK to hide your cards ")
+				c = strings.ToLower(readFromTerminal())
+			}
 
-				printSimPoker()
-			}*/
+			printSimPoker()
+		}*/
+		if !p.isBot {
+			fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
+		}
+		//fmt.Print("\t", p.name, ", your cards are:\n\n")
+		//fmt.Println(p.cards[0].toString(), " ", p.cards[1].toString())
 
 	}
 }
